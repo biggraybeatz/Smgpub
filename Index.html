@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SMGPUB℠ — Music publishing, beat licensing, and creator services.">
+    <title>SMGPUB℠ | Creative Operating System</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800;900&family=Merriweather:wght@700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary: #37d0ff;
+            --accent: #c24bff;
+            --bg: #0b0b12;
+            --panel: #161625;
+            --text: #ffffff;
+            --muted: #9fb3c8;
+            --stroke: #252538;
+            --glow: 0 0 20px rgba(55, 208, 255, 0.35);
+            --radius: 16px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.light {
+            --bg: #f8fafc;
+            --panel: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --stroke: #e2e8f0;
+            --glow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; outline: none; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            overflow-x: hidden;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        h1, h2, h3 { font-family: 'Merriweather', serif; font-weight: 900; }
+
+        /* --- NAVIGATION --- */
+        header {
+            padding: 1.2rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(22, 22, 37, 0.7);
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid var(--stroke);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-decoration: none;
+            cursor: pointer;
+            letter-spacing: -1.5px;
+            filter: drop-shadow(var(--glow));
+        }
+
+        nav { display: flex; gap: 2rem; align-items: center; }
+        nav a { 
+            color: var(--text); 
+            text-decoration: none; 
+            font-size: 0.85rem; 
+            font-weight: 600; 
+            opacity: 0.8;
+            transition: var(--transition);
+        }
+        nav a:hover { color: var(--primary); opacity: 1; }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            padding: 12px 24px;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 800;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            border: none;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: var(--transition);
+        }
+        .btn:hover { transform: translateY(-3px); box-shadow: var(--glow); filter: brightness(1.1); }
+        .btn-outline { background: transparent; border: 1px solid var(--stroke); color: var(--text); }
+
+        /* --- VIEW CONTROLLER --- */
+        .view-section { display: none; animation: slideUp 0.5s ease-out; }
+        .view-section.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 60px 5%; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; }
+        
+        .card { 
+            background: var(--panel); 
+            padding: 30px; 
+            border-radius: var(--radius); 
+            border: 1px solid var(--stroke); 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            transition: var(--transition);
+        }
+        .card:hover { border-color: var(--primary); transform: scale(1.01); }
+        
+        /* --- AUDIO UI --- */
+        .waveform-container {
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .isrc-tag {
+            font-family: monospace;
+            font-size: 0.65rem;
+            background: rgba(55, 208, 255, 0.15);
+            color: var(--primary);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+
+        /* --- DATA TABLES --- */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; color: var(--muted); border-bottom: 2px solid var(--stroke); padding: 15px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
+        td { padding: 15px; border-bottom: 1px solid var(--stroke); font-size: 0.9rem; }
+
+        /* --- MODALS --- */
+        .modal {
+            display:none; position:fixed; top:0; left:0; width:100%; height:100%; 
+            background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center; backdrop-filter: blur(10px);
+        }
+
+        footer { text-align: center; padding: 60px; color: var(--muted); border-top: 1px solid var(--stroke); font-size: 0.8rem; }
+
+        #upload-zone {
+            border: 2px dashed var(--stroke);
+            padding: 40px;
+            border-radius: var(--radius);
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        #upload-zone:hover { border-color: var(--accent); background: rgba(194, 75, 255, 0.05); }
+
+        .price-tag { font-size: 2rem; font-weight: 900; color: var(--primary); margin: 15px 0; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo" onclick="showView('home')">SMGPUB℠</div>
+    <nav>
+        <a href="#" onclick="showView('beats')">Beats</a>
+        <a href="#" onclick="showView('membership')">Membership</a>
+        <a href="#" onclick="showView('dashboard')">Artist Portal</a>
+        <button id="themeToggle" class="btn btn-outline" style="padding: 6px 12px; font-size: 1.1rem;">🌙</button>
+        <button class="btn" onclick="showView('dashboard')">Login</button>
+    </nav>
+</header>
+
+<main>
+    <section id="view-home" class="view-section active">
+        <div class="container" style="text-align: center; padding-top: 100px;">
+            <span style="color: var(--accent); font-weight: 800; font-size: 0.8rem; letter-spacing: 3px; text-transform: uppercase;">Next-Gen Music Infrastructure</span>
+            <h1 style="font-size: clamp(3rem, 8vw, 5.5rem); line-height: 1; margin: 20px 0;">Publish & <span style="background: linear-gradient(90deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Monetize.</span></h1>
+            <p style="max-width: 600px; margin: 0 auto 40px; color: var(--muted); font-size: 1.2rem;">The complete operating system for independent creators. Global administration, licensing, and real-time royalty payouts.</p>
+            <div style="display: flex; gap: 20px; justify-content: center;">
+                <button class="btn" onclick="showView('membership')">Get Started</button>
+                <button class="btn btn-outline" onclick="showView('beats')">Browse Beats</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="view-beats" class="view-section container">
+        <h2 style="font-size: 2.5rem; margin-bottom: 40px;">Audio Assets</h2>
+        <div class="grid">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                    <div>
+                        <h3>Night Shift</h3>
+                        <p style="color: var(--muted); font-size: 0.8rem;">Trap • 140 BPM • A Minor</p>
+                    </div>
+                    <span class="isrc-tag">US-SMG-26-001</span>
+                </div>
+                <div class="waveform-container" id="wave-beat-1"></div>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <button class="btn btn-outline" onclick="togglePlay('beat-1', 'https://www.archive.org/download/testmp3testfile/mp3test.mp3')">Preview</button>
+                    <div class="price-tag" style="font-size: 1.5rem; margin:0;">$49.99</div>
+                    <button class="btn" onclick="openCheckout('Night Shift', '$49.99')">License</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="view-dashboard" class="view-section container">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 40px;">
+            <h2>Creator Dashboard</h2>
+            <div class="isrc-tag" style="background: var(--accent); color: white;">Verified Artist</div>
+        </div>
+
+        <div class="grid" style="grid-template-columns: 2fr 1fr;">
+            <div>
+                <div class="card" style="margin-bottom: 30px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <h3>Revenue Analytics</h3>
+                        <div class="price-tag" style="margin:0;">$1,428.50</div>
+                    </div>
+                    <canvas id="revenueChart" style="width: 100%; height: 200px; margin-top: 20px;"></canvas>
+                </div>
+
+                <div class="card">
+                    <h3>Recent Transactions</h3>
+                    <table id="activityTable">
+                        <thead><tr><th>Date</th><th>Asset</th><th>Result</th></tr></thead>
+                        <tbody>
+                            <tr><td>Jan 24, 2026</td><td>Night Shift (License)</td><td style="color:var(--primary)">+$49.99</td></tr>
+                            <tr><td>Jan 20, 2026</td><td>Catalog Indexing</td><td><span class="isrc-tag">SYNCED</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 30px;">
+                <div id="upload-zone" onclick="document.getElementById('fileInput').click()">
+                    <span style="font-size: 2.5rem;">☁️</span>
+                    <h3 style="margin-top: 10px;">Submit Master</h3>
+                    <p style="font-size: 0.8rem; color: var(--muted);">Click or drag WAV/MP3 files</p>
+                    <input type="file" id="fileInput" hidden onchange="handleFileUpload(this.files)">
+                    
+                    <div id="uploadProgress" style="display:none; margin-top:20px;">
+                        <div style="height:6px; width:100%; background:var(--stroke); border-radius:3px;">
+                            <div id="progressBar" style="height:100%; width:0%; background:var(--accent); border-radius:3px; transition: 0.3s;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="background: linear-gradient(135deg, rgba(55, 208, 255, 0.1), transparent);">
+                    <h3>Catalog Health</h3>
+                    <div style="margin-top: 15px;">
+                        <p style="font-size: 0.8rem;">Copyright Integrity: 100%</p>
+                        <p style="font-size: 0.8rem;">Managed Assets: 12</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="view-membership" class="view-section container">
+        <h2 style="text-align: center; margin-bottom: 50px;">Scale Your Career</h2>
+        <div class="grid">
+            <div class="card">
+                <h3>Starter Admin</h3>
+                <div class="price-tag">$89.99<span style="font-size: 1rem; color: var(--muted);">/mo</span></div>
+                <ul style="list-style: none; color: var(--muted); margin-bottom: 30px;">
+                    <li>✓ Global Collection</li>
+                    <li>✓ 10 Works Managed</li>
+                </ul>
+                <button class="btn" style="width:100%">Choose Plan</button>
+            </div>
+            <div class="card" style="border-color: var(--accent); position: relative; transform: scale(1.05);">
+                <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: bold;">MOST POPULAR</div>
+                <h3>Pro Publisher</h3>
+                <div class="price-tag">$149<span style="font-size: 1rem; color: var(--muted);">/mo</span></div>
+                <ul style="list-style: none; color: var(--muted); margin-bottom: 30px;">
+                    <li>✓ Unlimited Works</li>
+                    <li>✓ Sync Pitching</li>
+                </ul>
+                <button class="btn" style="width:100%">Choose Plan</button>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div id="checkoutModal" class="modal">
+    <div class="card" style="width: 450px; text-align: center;">
+        <h2 id="modalTitle">License Asset</h2>
+        <div id="modalPrice" class="price-tag"></div>
+        <p style="color: var(--muted); font-size: 0.9rem; margin-bottom: 30px;">Includes Commercial PDF License & High-Quality WAV</p>
+        <button class="btn" style="width: 100%; padding: 18px;" onclick="completePurchase()">Authorize Secure Payment</button>
+        <button class="btn btn-outline" style="width: 100%; margin-top: 15px;" onclick="closeModal()">Cancel</button>
+    </div>
+</div>
+
+<footer>
+    <p>© 2026 SMGPUB℠ — Summer’s Media LLC | The Creative Operating System</p>
+</footer>
+
+<script>
+    // --- NAVIGATION & VIEW ENGINE ---
+    function showView(id) {
+        document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+        const target = document.getElementById('view-' + id);
+        if(target) {
+            target.classList.add('active');
+            window.scrollTo(0,0);
+            if(id === 'dashboard') initChart();
+        }
+    }
+
+    // --- AUDIO ENGINE (Wavesurfer) ---
+    const tracks = {};
+    function togglePlay(id, url) {
+        if (!tracks[id]) {
+            tracks[id] = WaveSurfer.create({
+                container: '#wave-' + id,
+                waveColor: '#4b5563',
+                progressColor: '#37d0ff',
+                height: 50,
+                barWidth: 2,
+                borderRadius: 3
+            });
+            tracks[id].load(url);
+            tracks[id].on('ready', () => tracks[id].play());
+        } else {
+            tracks[id].playPause();
+        }
+    }
+
+    // --- COMMERCE ENGINE ---
+    function openCheckout(name, price) {
+        document.getElementById('modalTitle').innerText = name;
+        document.getElementById('modalPrice').innerText = price;
+        document.getElementById('checkoutModal').style.display = 'flex';
+    }
+    function closeModal() { document.getElementById('checkoutModal').style.display = 'none'; }
+    function completePurchase() {
+        alert("Transaction successful. Files added to your Portal.");
+        closeModal();
+    }
+
+    // --- UPLOAD & PORTAL SYNC ---
+    function handleFileUpload(files) {
+        if (!files[0]) return;
+        const bar = document.getElementById('progressBar');
+        const container = document.getElementById('uploadProgress');
+        container.style.display = 'block';
+        
+        let width = 0;
+        const interval = setInterval(() => {
+            width += 5;
+            bar.style.width = width + '%';
+            if (width >= 100) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    container.style.display = 'none';
+                    bar.style.width = '0%';
+                    syncActivity(files[0].name);
+                }, 500);
+            }
+        }, 100);
+    }
+
+    function syncActivity(filename) {
+        const table = document.querySelector("#activityTable tbody");
+        const row = table.insertRow(0);
+        row.style.animation = "slideUp 0.5s ease-out forwards";
+        row.innerHTML = `
+            <td>Jan 30, 2026</td>
+            <td>Upload: ${filename}</td>
+            <td><span class="isrc-tag" style="background:var(--accent); color:white">PENDING</span></td>
+        `;
+    }
+
+    // --- ANALYTICS ENGINE (Chart.js) ---
+    let revenueChart;
+    function initChart() {
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        if(revenueChart) revenueChart.destroy();
+        revenueChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan 01', 'Jan 08', 'Jan 15', 'Jan 22', 'Jan 30'],
+                datasets: [{
+                    label: 'Revenue',
+                    data: [120, 450, 300, 900, 1428],
+                    borderColor: '#37d0ff',
+                    backgroundColor: 'rgba(55, 208, 255, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#9fb3c8' } },
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9fb3c8' } }
+                }
+            }
+        });
+    }
+
+    // --- THEME ENGINE ---
+    document.getElementById("themeToggle").onclick = () => {
+        const isLight = document.body.classList.toggle("light");
+        document.getElementById("themeToggle").textContent = isLight ? "🌙" : "☀️";
+    };
+</script> 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>SMGPUB℠ | Music Publishing & Licensing</title>
+<meta name="description" content="SMGPUB℠ — Music publishing, licensing, artist subscriptions, and creator dashboards." />
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#0b0b12;
+  --panel:#151525;
+  --primary:#37d0ff;
+  --accent:#c24bff;
+  --text:#ffffff;
+  --muted:#9fb3c8;
+  --stroke:#24243a;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  font-family:Inter,system-ui,Arial;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.6;
+}
+
+header{
+  position:sticky;
+  top:0;
+  z-index:999;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px 40px;
+  background:rgba(11,11,18,.85);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--stroke);
+}
+
+.logo{
+  font-size:22px;
+  font-weight:900;
+  color:var(--primary);
+  cursor:pointer;
+}
+
+nav a{
+  margin-left:20px;
+  color:var(--text);
+  text-decoration:none;
+  font-size:.85rem;
+  font-weight:600;
+}
+
+nav a:hover{color:var(--primary)}
+
+.btn{
+  background:linear-gradient(90deg,var(--primary),var(--accent));
+  color:#000;
+  border:none;
+  padding:12px 22px;
+  border-radius:8px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.btn.outline{
+  background:none;
+  border:1px solid var(--stroke);
+  color:var(--text);
+}
+
+section{
+  max-width:1200px;
+  margin:auto;
+  padding:90px 20px;
+}
+
+.hero{
+  text-align:center;
+  padding-top:120px;
+}
+
+.hero h1{
+  font-size:clamp(2.6rem,7vw,4.8rem);
+  font-weight:900;
+  line-height:1.1;
+  margin-bottom:20px;
+}
+
+.hero span{
+  background:linear-gradient(90deg,var(--primary),var(--accent));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+
+.hero p{
+  max-width:650px;
+  margin:0 auto 40px;
+  color:var(--muted);
+  font-size:1.15rem;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:25px;
+}
+
+.card{
+  background:var(--panel);
+  border:1px solid var(--stroke);
+  border-radius:14px;
+  padding:30px;
+}
+
+.card h3{margin-bottom:10px}
+
+.price{
+  font-size:2rem;
+  font-weight:900;
+  color:var(--primary);
+}
+
+footer{
+  border-top:1px solid var(--stroke);
+  padding:50px;
+  text-align:center;
+  color:var(--muted);
+  font-size:.8rem;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="logo" onclick="scrollToSection('home')">SMGPUB℠</div>
+  <nav>
+    <a href="#publishing">Publishing</a>
+    <a href="#plans">Plans</a>
+    <a href="#dashboard">Dashboard</a>
+    <a href="#login">Login</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<section id="home" class="hero">
+  <h1>Music Publishing<br><span>Done Right.</span></h1>
+  <p>
+    Global royalty collection, beat licensing, artist subscriptions,
+    and real-time dashboards — built for independent creators.
+  </p>
+  <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+    <button class="btn" onclick="subscribe()">Start Membership</button>
+    <button class="btn outline" onclick="scrollToSection('publishing')">Learn More</button>
+  </div>
+</section>
+
+<!-- PUBLISHING -->
+<section id="publishing">
+  <h2>Publishing Administration</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Global Royalties</h3>
+      <p class="muted">Worldwide collection via professional publishing infrastructure.</p>
+    </div>
+    <div class="card">
+      <h3>Rights Control</h3>
+      <p class="muted">100% ownership retained. Transparent reporting.</p>
+    </div>
+    <div class="card">
+      <h3>Sync Ready</h3>
+      <p class="muted">Catalog structured for placements & licensing.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PLANS -->
+<section id="plans">
+  <h2>Membership Plans</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>Starter</h3>
+      <div class="price">$89</div>
+      <p>/ month</p>
+      <button class="btn" onclick="subscribe()">Subscribe</button>
+    </div>
+    <div class="card" style="border-color:var(--primary)">
+      <h3>Pro Publisher</h3>
+      <div class="price">$149</div>
+      <p>/ month</p>
+      <button class="btn" onclick="subscribe()">Subscribe</button>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD -->
+<section id="dashboard">
+  <h2>Artist Dashboard</h2>
+  <p>Secure portal for uploads, catalog management, and royalties.</p>
+  <button class="btn outline" onclick="goDashboard()">Open Dashboard</button>
+</section>
+
+<!-- LOGIN -->
+<section id="login">
+  <h2>Artist Login</h2>
+  <div class="card" style="max-width:420px">
+    <input id="email" placeholder="Email" style="width:100%;padding:12px;margin-bottom:15px">
+    <button class="btn" style="width:100%" onclick="login()">Login</button>
+  </div>
+</section>
+
+<footer>
+  © 2026 SMGPUB℠ — Summer’s Media LLC
+</footer>
+
+<script>
+const API = "https://YOUR-VERCEL-APP.vercel.app/api";
+
+function scrollToSection(id){
+  document.getElementById(id).scrollIntoView({behavior:"smooth"});
+}
+
+async function login(){
+  const email = document.getElementById("email").value;
+  const res = await fetch(API + "/auth/login",{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ email })
+  });
+  const data = await res.json();
+  localStorage.setItem("token",data.token);
+  alert("Logged in");
+}
+
+async function subscribe(){
+  const res = await fetch(API + "/stripe/subscribe",{ method:"POST" });
+  const data = await res.json();
+  window.location.href = data.url;
+}
+
+function goDashboard(){
+  window.location.href = "/dashboard";
+}
+</script>
+
+</body>
+</html>
+
+
+</body>
+</html>
