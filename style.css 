@@ -1,0 +1,19 @@
+body {
+  font-family: 'Inter', sans-serif;
+  background: #0b0b12;
+  color: #fff;
+  margin: 0; padding: 0;
+}
+
+header {
+  display:flex; justify-content:space-between; padding:20px 40px; background: rgba(11,11,18,.85); position:sticky; top:0; z-index:999;
+}
+
+.logo { font-weight:900; cursor:pointer; color:#37d0ff; }
+nav a { margin-left:20px; text-decoration:none; color:#fff; font-weight:600; }
+nav a:hover { color:#c24bff; }
+
+.btn { padding:10px 20px; background:linear-gradient(90deg,#37d0ff,#c24bff); border:none; border-radius:8px; cursor:pointer; color:#fff; margin:5px; }
+.view-section { display:none; padding:40px; }
+.view-section.active { display:block; }
+input { padding:10px; margin:5px 0; width:100%; }
